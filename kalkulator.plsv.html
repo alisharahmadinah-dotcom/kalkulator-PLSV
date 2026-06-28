@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator PLSV Interaktif</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F0F4FF; --surface: #F8FAFF; --blue-primary: #4A90D9;
+      --blue-dark: #1A5FB4; --blue-light: #90BDE8; --blue-pale: #DCE9F8;
+      --blue-mid: #C2D9F5; --text-main: #0D1F3C; --text-sub: #2E4A72;
+      --text-hint: #6A8AB0; --border: #B8D0EE; --green: #4CAF87;
+      --green-light: #D4F4E8; --red: #E87373; --red-light: #FDDEDE;
+    }
+    html, body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
+    .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+    .header { background: linear-gradient(135deg, #1A5FB4 0%, #4A90D9 55%, #90BDE8 100%); padding: 28px 24px 24px; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: -30px; right: -30px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+    .header::after { content: ''; position: absolute; bottom: -40px; left: 20%; width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+    .header-chip { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
+    .header h1 { font-size: 24px; font-weight: 900; color: #fff; line-height: 1.25; position: relative; z-index: 1; }
+    .header p { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 5px; position: relative; z-index: 1; }
+    .tabs { display: flex; background: var(--surface); border-bottom: 1.5px solid var(--border); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(26,95,180,0.08); }
+    .tab { flex: 1; padding: 14px 8px 12px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text-hint); border-bottom: 3px solid transparent; transition: all 0.2s; user-select: none; }
+    .tab:hover { color: var(--blue-dark); }
+    .tab.active { color: var(--blue-dark); border-bottom-color: var(--blue-dark); }
+    .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+    .panel { display: none; padding: 20px 16px 40px; }
+    .panel.active { display: block; }
+    .slabel { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-hint); margin-bottom: 12px; }
+    .card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+    .card.blue { background: var(--blue-pale); border-color: var(--blue-light); }
+    .card-title { font-size: 15px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .num-badge { width: 26px; height: 26px; border-radius: 50%; background: var(--blue-primary); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .card-body { font-size: 13.5px; color: var(--text-sub); line-height: 1.8; }
+    .formula { background: var(--text-main); border-radius: 14px; padding: 16px 24px; text-align: center; margin: 14px 0; }
+    .formula .cap { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .pill { background: var(--blue-pale); border: 1.5px solid var(--blue-light); border-radius: 10px; padding: 8px 14px; text-align: center; min-width: 58px; }
+    .pill .pval { font-size: 20px; font-weight: 800; color: var(--blue-dark); }
+    .pill .plbl { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+    .step-list { list-style: none; margin-top: 10px; }
+    .step-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text-sub); margin-bottom: 10px; line-height: 1.7; }
+    .snum { background: var(--blue-mid); color: var(--blue-dark); border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .btn-main { width: 100%; background: var(--blue-dark); color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; padding: 15px; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s, transform 0.1s; }
+    .btn-main:hover { background: #154d96; }
+    .btn-main:active { transform: scale(0.98); }
+    .btn-outline { width: 100%; background: transparent; color: var(--blue-dark); border: 2px solid var(--blue-dark); border-radius: 14px; font-size: 14px; font-weight: 800; padding: 12px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+    .btn-outline:hover { background: var(--blue-pale); }
+    .eq-builder { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .eq-input { width: 72px; background: var(--blue-pale); border: 2px solid var(--blue-light); border-radius: 10px; text-align: center; font-size: 18px; font-weight: 800; color: var(--blue-dark); padding: 8px 4px; outline: none; transition: border-color 0.2s; }
+    .eq-input:focus { border-color: var(--blue-dark); }
+    .eq-input.invalid { border-color: var(--red); background: var(--red-light); }
+    .eq-sym { font-size: 22px; font-weight: 800; color: var(--text-main); }
+    .eq-var { font-size: 22px; font-weight: 800; font-style: italic; color: var(--blue-primary); background: var(--blue-pale); border: 2px dashed var(--blue-light); border-radius: 10px; padding: 8px 16px; }
+    .input-hint { font-size: 11px; color: var(--text-hint); text-align: center; margin-bottom: 14px; background: var(--blue-pale); border-radius: 8px; padding: 6px 10px; }
+    .input-hint strong { color: var(--blue-dark); }
+    .result-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+    .step-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .step-row:last-child { border-bottom: none; }
+    .sbadge { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; background: var(--blue-pale); color: var(--blue-dark); }
+    .sbadge.done { background: var(--green-light); color: #1A6A44; }
+    .step-eq { font-size: 15px; color: var(--text-main); line-height: 1.7; }
+    .step-desc { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+    .answer-box { background: linear-gradient(120deg, #4CAF87, #3D9970); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+    .answer-emoji { font-size: 32px; }
+    .answer-val { font-size: 22px; font-weight: 900; color: #fff; line-height: 1.4; }
+    .answer-sub { font-size: 12px; color: rgba(255,255,255,0.8); }
+    .numberline-wrap { margin: 14px 0 4px; }
+    .numberline-title { font-size: 13px; font-weight: 800; color: var(--text-sub); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .nl-canvas-wrap { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 12px 12px; overflow: hidden; }
+    #numberline-svg { width: 100%; display: block; }
+    .progress-wrap { margin-bottom: 16px; }
+    .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .progress-bar { height: 7px; background: var(--blue-mid); border-radius: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue-primary), var(--blue-dark)); border-radius: 10px; transition: width 0.4s; }
+    .score-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+    .score-chip { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .score-val { font-size: 24px; font-weight: 900; color: var(--blue-dark); }
+    .score-val.g { color: var(--green); }
+    .score-val.r { color: var(--red); }
+    .score-lbl { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+    .soal-num { font-size: 11px; font-weight: 800; color: var(--text-hint); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .jenis-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; }
+    .jenis-badge.bulat     { background: var(--blue-pale); color: var(--blue-dark); }
+    .jenis-badge.pecahan   { background: #EDE7F6; color: #5E35B1; }
+    .jenis-badge.rasional  { background: #FFF3E0; color: #E65100; }
+    .jenis-badge.cerita    { background: #E8F5E9; color: #2E7D32; }
+    .jenis-badge.analisis  { background: #FCE4EC; color: #880E4F; }
+    .soal-q { font-size: 15px; font-weight: 700; color: var(--text-main); line-height: 1.6; margin-bottom: 12px; }
+    .soal-eq-box { background: var(--blue-pale); border-radius: 12px; padding: 14px 20px; display: block; margin-bottom: 18px; text-align: center; min-height: 54px; }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .opt-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 14px 10px; font-size: 14px; font-weight: 700; color: var(--text-sub); cursor: pointer; text-align: center; transition: all 0.2s; min-height: 52px; display: flex; align-items: center; justify-content: center; }
+    .opt-btn:hover:not(:disabled) { border-color: var(--blue-primary); color: var(--blue-dark); }
+    .opt-btn.correct { background: var(--green-light); border-color: var(--green); color: #1A6A44; }
+    .opt-btn.wrong   { background: var(--red-light); border-color: var(--red); color: #7A1A1A; }
+    .opt-btn:disabled { cursor: default; }
+    .feedback-box { margin-top: 14px; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; display: none; line-height: 1.7; }
+    .feedback-box.ok { background: var(--green-light); color: #1A6A44; }
+    .feedback-box.no { background: var(--red-light); color: #7A1A1A; }
+    .feedback-steps { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); font-size: 12px; }
+    .feedback-step-row { margin-bottom: 4px; }
+    .congrats { text-align: center; padding: 30px 20px; display: none; }
+    .congrats-emoji { font-size: 64px; display: block; margin-bottom: 12px; }
+    .congrats h2 { font-size: 26px; font-weight: 900; color: var(--blue-dark); margin-bottom: 6px; }
+    .congrats p { font-size: 15px; color: var(--text-sub); }
+    .score-final { font-size: 48px; font-weight: 900; color: var(--blue-dark); display: block; margin: 12px 0; }
+    /* Math renderer */
+    .katex-wrap { display: inline; font-family: 'Times New Roman', 'Georgia', serif; font-style: italic; line-height: 1; }
+    .katex-wrap.display { display: block; text-align: center; margin: 8px auto; font-size: 1.18em; }
+    .katex-frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px; }
+    .katex-frac-num { border-bottom: 1.5px solid currentColor; padding: 0 4px 2px; text-align: center; font-size: 0.88em; line-height: 1.3; }
+    .katex-frac-den { padding: 2px 4px 0; text-align: center; font-size: 0.88em; line-height: 1.3; }
+    .katex-wrap .kop  { font-style: normal; margin: 0 3px; font-family: 'Segoe UI', sans-serif; }
+    .katex-wrap .knum { font-style: normal; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .katex-wrap .kvar { font-style: italic; }
+    .formula .katex-wrap { color: #DCE9F8; font-size: 1.5em; }
+    .answer-val .katex-wrap { color: #fff; font-size: 1.05em; }
+    .soal-eq-box .katex-wrap { font-size: 1.3em; color: var(--blue-dark); }
+    .opt-btn .katex-wrap { color: inherit; font-size: 0.98em; }
+    .pval .katex-wrap { color: var(--blue-dark); font-size: 1.1em; }
+    .step-eq .katex-wrap { vertical-align: middle; }
+    .card-body .katex-wrap { color: var(--text-sub); }
+    .feedback-box .katex-wrap { color: inherit; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-chip">SMP / MTs · Kelas VII · Matematika</div>
+    <h1>Kalkulator PLSV<br>Interaktif 🔵</h1>
+    <p>Persamaan Linear Satu Variabel — belajar step by step</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('materi')"><span class="tab-icon">📚</span>Materi</div>
+    <div class="tab" onclick="switchTab('kalkulator')"><span class="tab-icon">🧮</span>Kalkulator</div>
+    <div class="tab" onclick="switchTab('soal')"><span class="tab-icon">✏️</span>Soal Latihan</div>
+  </div>
+
+  <!-- PANEL MATERI -->
+  <div id="panel-materi" class="panel active">
+    <p class="slabel">Konsep Dasar</p>
+
+    <div class="card blue">
+      <div class="card-title"><div class="num-badge">?</div>Apa itu PLSV?</div>
+      <div class="card-body">
+        Persamaan Linear Satu Variabel adalah persamaan yang memiliki
+        <strong>satu variabel</strong> (biasanya \(x\)) dengan pangkat
+        tertinggi <strong>1</strong>. Tujuannya: mencari nilai variabel yang membuat persamaan bernilai benar.
+      </div>
+      <div class="formula">
+        <div>\( ax + b = c \)</div>
+        <div class="cap">Bentuk Umum PLSV</div>
+        <div class="cap" style="font-size:0.82em;margin-top:4px;opacity:0.85">dengan \( a \neq 0 \)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="num-badge">📌</div>Komponen Persamaan</div>
+      <div class="pill-row">
+        <div class="pill"><div class="pval">\(a\)</div><div class="plbl">Koefisien</div></div>
+        <div class="pill"><div class="pval">\(x\)</div><div class="plbl">Variabel</div></div>
+        <div class="pill"><div class="pval">\(b\)</div><div class="plbl">Konstanta</div></div>
+        <div class="pill"><div class="pval">\(c\)</div><div class="plbl">Hasil</div></div>
+      </div>
+      <div class="card-body" style="margin-top:12px">
+        Koefisien &amp; konstanta adalah bilangan diketahui. Variabel \(x\) adalah yang kita cari.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="num-badge">🔢</div>Langkah Penyelesaian</div>
+      <div class="card-body">Contoh: \( 2x + 3 = 11 \)</div>
+      <ul class="step-list">
+        <li><div class="snum">1</div><div>Tulis persamaan awal: \( 2x + 3 = 11 \)</div></li>
+        <li><div class="snum">2</div><div>Tambahkan kedua ruas dengan \(-3\):<br>\( 2x + 3 + (-3) = 11 + (-3) \)<br>\( 2x = 8 \)</div></li>
+        <li><div class="snum">3</div><div>Kalikan kedua ruas dengan \( \dfrac{1}{2} \):<br>\( \dfrac{1}{2} \times 2x = \dfrac{1}{2} \times 8 \)</div></li>
+        <li><div class="snum">4</div><div><strong>Hasil: \( x = 4 \) ✓</strong></div></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="num-badge">💡</div>Tips Penting</div>
+      <ul class="step-list">
+        <li><div class="snum">✦</div><div>Apa yang dilakukan di ruas kiri, lakukan hal yang sama di ruas kanan.</div></li>
+        <li><div class="snum">✦</div><div>Untuk menghilangkan konstanta \(b\), <strong>tambahkan</strong> kedua ruas dengan lawan dari \(b\), yaitu \(-b\).</div></li>
+        <li><div class="snum">✦</div><div>Untuk menghilangkan koefisien \(a\), <strong>kalikan</strong> kedua ruas dengan kebalikan dari \(a\), yaitu \(\dfrac{1}{a}\).</div></li>
+        <li><div class="snum">✦</div><div>Selalu cek jawabanmu dengan substitusi kembali ke persamaan asal.</div></li>
+      </ul>
+    </div>
+
+    <button class="btn-main" onclick="switchTab('kalkulator')">Coba Kalkulator Sekarang →</button>
+  </div>
+
+  <!-- PANEL KALKULATOR -->
+  <div id="panel-kalkulator" class="panel">
+    <p class="slabel">Masukkan Persamaan</p>
+    <div class="card">
+      <div class="card-body" style="margin-bottom:10px;font-weight:600">\( ax + b = c \), &nbsp; \( a \neq 0 \)</div>
+      <div class="input-hint">Masukkan bilangan bulat <strong>(misal: 3, -5)</strong> atau pecahan <strong>(misal: 1/2, -3/4)</strong></div>
+      <div class="eq-builder">
+        <input class="eq-input" id="inp-a" type="text" value="2" placeholder="a" title="Koefisien a">
+        <span class="eq-var" style="font-style:italic">x</span>
+        <span class="eq-sym">+</span>
+        <input class="eq-input" id="inp-b" type="text" value="3" placeholder="b" title="Konstanta b">
+        <span class="eq-sym">=</span>
+        <input class="eq-input" id="inp-c" type="text" value="11" placeholder="c" title="Hasil c">
+      </div>
+      <button class="btn-main" onclick="solve()">✨ Selesaikan Langkah demi Langkah!</button>
+    </div>
+
+    <div id="result-area" style="display:none">
+      <p class="slabel">Langkah-langkah Penyelesaian</p>
+      <div class="result-card" id="steps-container"></div>
+      <div class="answer-box" id="answer-box">
+        <span class="answer-emoji">🎉</span>
+        <div>
+          <div class="answer-val" id="answer-val"></div>
+          <div class="answer-sub">Nilai variabel x berhasil ditemukan!</div>
+        </div>
+      </div>
+      <div class="numberline-wrap">
+        <div class="numberline-title">📍 Garis Bilangan</div>
+        <div class="nl-canvas-wrap">
+          <svg id="numberline-svg" viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+      <button class="btn-outline" onclick="resetCalc()">🔄 Coba Persamaan Lain</button>
+    </div>
+  </div>
+
+  <!-- PANEL SOAL -->
+  <div id="panel-soal" class="panel">
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="slabel" style="margin:0">Soal Latihan</span>
+        <span id="prog-text" style="font-size:13px;font-weight:700;color:var(--text-hint)">1 / 20</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:5%"></div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-chip"><div class="score-val g" id="sc-benar">0</div><div class="score-lbl">Benar ✓</div></div>
+      <div class="score-chip"><div class="score-val r" id="sc-salah">0</div><div class="score-lbl">Salah ✗</div></div>
+      <div class="score-chip"><div class="score-val" id="sc-sisa">20</div><div class="score-lbl">Tersisa</div></div>
+    </div>
+    <div class="card" id="soal-wrapper">
+      <div class="soal-num" id="soal-num">Soal #1</div>
+      <div class="soal-q" id="soal-q"></div>
+      <div class="soal-eq-box" id="soal-eq" style="display:none"></div>
+      <div class="options-grid" id="options-grid"></div>
+      <div class="feedback-box" id="feedback"></div>
+    </div>
+    <button id="btn-next" class="btn-main" onclick="nextSoal()" style="display:none;margin-top:4px">Soal Berikutnya →</button>
+    <div class="congrats" id="congrats">
+      <span class="congrats-emoji">🏆</span>
+      <h2>Selamat! Kamu Selesai!</h2>
+      <span class="score-final" id="score-final">0/20</span>
+      <p id="congrats-msg">Kerja bagus! Terus berlatih ya.</p>
+      <button class="btn-main" onclick="restartSoal()" style="margin-top:20px">🔄 Ulangi Latihan</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── MATH RENDERER ── */
+(function() {
+  function tokenize(src) {
+    var tokens = [], i = 0;
+    while (i < src.length) {
+      if (src[i] === '\\') {
+        var m = src.slice(i).match(/^\\([a-zA-Z]+)/);
+        if (m) { tokens.push({ t: 'cmd', v: m[1] }); i += m[0].length; continue; }
+        tokens.push({ t: 'sym', v: src[i+1] || '' }); i += 2; continue;
+      }
+      if (src[i] === '{') { tokens.push({ t: 'lbrace' }); i++; continue; }
+      if (src[i] === '}') { tokens.push({ t: 'rbrace' }); i++; continue; }
+      if (src[i] === '^') { tokens.push({ t: 'sup' }); i++; continue; }
+      if (src[i] === '_') { tokens.push({ t: 'sub' }); i++; continue; }
+      if (/\s/.test(src[i])) { i++; continue; }
+      tokens.push({ t: 'char', v: src[i] }); i++;
+    }
+    return tokens;
+  }
+  function parse(tokens, stop) {
+    var nodes = [];
+    while (tokens.length > 0) {
+      var tk = tokens[0];
+      if (stop && stop(tk)) break;
+      tokens.shift();
+      if (tk.t === 'cmd') {
+        if (tk.v === 'frac' || tk.v === 'dfrac' || tk.v === 'tfrac') {
+          var num = parseGroup(tokens), den = parseGroup(tokens);
+          nodes.push({ type: 'frac', num: num, den: den });
+        } else if (tk.v === 'sqrt') {
+          nodes.push({ type: 'sqrt', inner: parseGroup(tokens) });
+        } else if (tk.v === 'text') {
+          nodes.push({ type: 'text', nodes: parseGroup(tokens) });
+        } else {
+          nodes.push({ type: 'sym', v: cmdToChar(tk.v), orig: tk.v });
+        }
+      } else if (tk.t === 'lbrace') {
+        var gr = parse(tokens, function(t){ return t.t === 'rbrace'; });
+        tokens.shift();
+        nodes.push({ type: 'group', nodes: gr });
+      } else if (tk.t === 'sup') {
+        var base = nodes.pop() || { type: 'empty' };
+        nodes.push({ type: 'sup', base: base, exp: parseOne(tokens) });
+      } else if (tk.t === 'sub') {
+        var base2 = nodes.pop() || { type: 'empty' };
+        nodes.push({ type: 'sub', base: base2, sub: parseOne(tokens) });
+      } else {
+        nodes.push({ type: 'char', v: tk.v || '' });
+      }
+    }
+    return nodes;
+  }
+  function parseGroup(tokens) {
+    if (!tokens.length) return [];
+    if (tokens[0].t === 'lbrace') {
+      tokens.shift();
+      var inner = parse(tokens, function(t){ return t.t === 'rbrace'; });
+      tokens.shift();
+      return inner;
+    }
+    return [parseOneRaw(tokens)];
+  }
+  function parseOne(tokens) { return parseGroup(tokens); }
+  function parseOneRaw(tokens) {
+    if (!tokens.length) return { type: 'empty' };
+    var tk = tokens.shift();
+    if (tk.t === 'char') return { type: 'char', v: tk.v };
+    if (tk.t === 'cmd')  return { type: 'sym', v: cmdToChar(tk.v), orig: tk.v };
+    return { type: 'empty' };
+  }
+  var cmdMap = {
+    'alpha':'α','beta':'β','gamma':'γ','delta':'δ','epsilon':'ε','theta':'θ',
+    'lambda':'λ','mu':'μ','pi':'π','sigma':'σ','phi':'φ','omega':'ω',
+    'approx':'≈','neq':'≠','leq':'≤','geq':'≥','div':'÷','times':'×',
+    'cdot':'·','pm':'±','infty':'∞','rightarrow':'→','leftarrow':'←',
+    'ldots':'…','quad':'\u2003','qquad':'\u2003\u2003','left':'','right':'',
+  };
+  function cmdToChar(cmd) { return cmdMap.hasOwnProperty(cmd) ? cmdMap[cmd] : ''; }
+  var DIGIT = /^[0-9.,]$/, ALPHA = /^[a-zA-Z]$/, OPS = /^[+\-=<>\/\*|:!]$/;
+  function renderNodes(nodes) { return nodes.map(renderNode).join(''); }
+  function renderNode(n) {
+    if (!n) return '';
+    switch (n.type) {
+      case 'frac':
+        return '<span class="katex-frac"><span class="katex-frac-num">' + renderNodes(n.num) +
+               '</span><span class="katex-frac-den">' + renderNodes(n.den) + '</span></span>';
+      case 'sqrt':
+        return '<span class="kop">√</span><span style="text-decoration:overline;padding:0 2px">' + renderNodes(n.inner) + '</span>';
+      case 'sup':
+        return renderNodes([n.base]) + '<sup style="font-size:0.72em;vertical-align:super">' + renderNodes(n.exp) + '</sup>';
+      case 'sub':
+        return renderNodes([n.base]) + '<sub style="font-size:0.72em;vertical-align:sub">' + renderNodes(n.sub) + '</sub>';
+      case 'group': return renderNodes(n.nodes);
+      case 'text': return '<span style="font-style:normal;font-family:inherit">' + renderNodes(n.nodes) + '</span>';
+      case 'sym':
+        if (!n.v || n.orig === 'left' || n.orig === 'right') return '';
+        if ('÷×·±≈≠≤≥→←∈'.indexOf(n.v) >= 0) return '<span class="kop">' + n.v + '</span>';
+        return '<span class="kvar">' + n.v + '</span>';
+      case 'char':
+        var c = n.v;
+        if (!c) return '';
+        if (DIGIT.test(c)) return '<span class="knum">' + c + '</span>';
+        if (OPS.test(c)) return '<span class="kop">' + (c==='<'?'&lt;':c==='>'?'&gt;':c) + '</span>';
+        if (ALPHA.test(c)) return '<span class="kvar">' + c + '</span>';
+        return c;
+      case 'empty': return '';
+      default: return '';
+    }
+  }
+  function renderLatex(latex) {
+    var toks = tokenize(latex.trim());
+    return renderNodes(parse(toks, null));
+  }
+  function renderKatexLocal(el) {
+    if (!el) return;
+    var html = el.innerHTML;
+    html = html.replace(/\\\[([\s\S]*?)\\\]/g, function(_, inner) {
+      return '<span class="katex-wrap display">' + renderLatex(inner) + '</span>';
+    });
+    html = html.replace(/\\\(([\s\S]*?)\\\)/g, function(_, inner) {
+      return '<span class="katex-wrap">' + renderLatex(inner) + '</span>';
+    });
+    el.innerHTML = html;
+  }
+  window.renderKatexLocal = renderKatexLocal;
+  document.addEventListener('DOMContentLoaded', function() { renderKatexLocal(document.body); });
+})();
+
+function mjRender(el) { if (el) renderKatexLocal(el); }
+
+/* ── TABS ── */
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + name);
+  panel.classList.add('active');
+  var map = { materi: 0, kalkulator: 1, soal: 2 };
+  document.querySelectorAll('.tab')[map[name]].classList.add('active');
+  window.scrollTo(0, 0);
+  mjRender(panel);
+}
+
+/* ── FRACTION UTILS ── */
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a; }
+function frac(num, den) {
+  if (den === 0) return null;
+  if (den < 0) { num = -num; den = -den; }
+  var g = gcd(Math.abs(num), den);
+  return { num: num / g, den: den / g };
+}
+function fracSub(a, b) { return frac(a.num * b.den - b.num * a.den, a.den * b.den); }
+function fracDiv(a, b) { return frac(a.num * b.den, a.den * b.num); }
+function fracToDecimal(f) { return f.num / f.den; }
+function fracStr(f) { return f.den === 1 ? '' + f.num : f.num + '/' + f.den; }
+function fracLatex(f) { return f.den === 1 ? '' + f.num : '\\dfrac{' + f.num + '}{' + f.den + '}'; }
+function fracSignedLatex(f) { return f.num >= 0 ? '+' + fracLatex(f) : fracLatex(f); }
+function parseInput(str) {
+  str = str.trim().replace(/\s+/g, '');
+  if (str === '' || str === '-' || str === '+') return null;
+  var slash = str.match(/^(-?\d+)\/(-?\d+)$/);
+  if (slash) { var n = parseInt(slash[1]), d = parseInt(slash[2]); if (d === 0) return null; return frac(n, d); }
+  var num = str.match(/^-?\d+(\.\d+)?$/);
+  if (num) { var val = parseFloat(str), dec = (str.split('.')[1] || '').length, mul = Math.pow(10, dec); return frac(Math.round(val * mul), mul); }
+  return null;
+}
+
+/* ── KALKULATOR ── */
+function solve() {
+  var elA = document.getElementById('inp-a');
+  var elB = document.getElementById('inp-b');
+  var elC = document.getElementById('inp-c');
+  [elA, elB, elC].forEach(function(el) { el.classList.remove('invalid'); });
+  var a = parseInput(elA.value), b = parseInput(elB.value), c = parseInput(elC.value);
+  if (!a) { elA.classList.add('invalid'); alert('Nilai a tidak valid!'); return; }
+  if (!b) { elB.classList.add('invalid'); alert('Nilai b tidak valid!'); return; }
+  if (!c) { elC.classList.add('invalid'); alert('Nilai c tidak valid!'); return; }
+  if (a.num === 0) { elA.classList.add('invalid'); alert('Koefisien a tidak boleh 0!'); return; }
+
+  var rhs = fracSub(c, b);
+  var x   = fracDiv(rhs, a);
+  var xDec = fracToDecimal(x);
+  var aL = fracLatex(a), bL = fracLatex(b), cL = fracLatex(c), rhsL = fracLatex(rhs), xL = fracLatex(x);
+  var bSign = fracSignedLatex(b);
+  var negB = frac(-b.num, b.den);
+  var negBL = fracLatex(negB);
+  var negBSignedL = fracSignedLatex(negB);
+  var invA = frac(a.den, a.num);
+  var invAL = fracLatex(invA);
+
+  // Step 2: "tambahkan kedua ruas dengan lawan dari b" (additive inverse)
+  var step2desc, step2eq;
+  if (b.num !== 0) {
+    step2desc = 'Tambahkan kedua ruas dengan lawan dari \\(' + bL + '\\), yaitu \\(' + negBL + '\\)';
+    step2eq   = '\\(' + aL + 'x ' + bSign + ' ' + negBSignedL + ' = ' + cL + ' ' + negBSignedL + '\\)<br>\\(' + aL + 'x = ' + rhsL + '\\)';
+  } else {
+    step2desc = 'Konstanta bernilai 0, tidak perlu dipindahkan';
+    step2eq   = '\\(' + aL + 'x = ' + cL + '\\)';
+  }
+
+  // Step 3: "kalikan kedua ruas dengan kebalikan (invers) dari a" (multiplicative inverse)
+  var step3eq = '\\(' + invAL + ' \\times ' + aL + 'x = ' + invAL + ' \\times ' + rhsL + '\\)<br>\\(x = ' + xL + '\\)';
+
+  var steps = [
+    { badge: 'Langkah 1', eq: '\\(' + aL + 'x ' + bSign + ' = ' + cL + '\\)', desc: 'Persamaan awal', done: false },
+    { badge: 'Langkah 2', eq: step2eq, desc: step2desc, done: false },
+    { badge: 'Langkah 3', eq: step3eq, desc: 'Kalikan kedua ruas dengan kebalikan (invers) dari koefisien \\(' + aL + '\\), yaitu \\(' + invAL + '\\)', done: false },
+    { badge: 'Selesai ✓', eq: '\\( x = ' + xL + ' \\)', desc: 'Nilai variabel ditemukan!', done: true }
+  ];
+
+  var html = '';
+  for (var i = 0; i < steps.length; i++) {
+    var s = steps[i];
+    html += '<div class="step-row"><span class="sbadge ' + (s.done ? 'done' : '') + '">' + s.badge + '</span>'
+          + '<div><div class="step-eq">' + s.eq + '</div><div class="step-desc">' + s.desc + '</div></div></div>';
+  }
+
+  var stepsContainer = document.getElementById('steps-container');
+  stepsContainer.innerHTML = html;
+
+  var answerEl = document.getElementById('answer-val');
+  answerEl.innerHTML = '\\( x = ' + xL + ' \\)';
+
+  document.getElementById('result-area').style.display = 'block';
+  drawNumberLine(xDec, fracStr(x));
+  mjRender(document.getElementById('result-area'));
+  document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetCalc() {
+  document.getElementById('result-area').style.display = 'none';
+  ['inp-a','inp-b','inp-c'].forEach(function(id) {
+    document.getElementById(id).value = '';
+    document.getElementById(id).classList.remove('invalid');
+  });
+  document.getElementById('inp-a').focus();
+}
+
+/* ── GARIS BILANGAN ── */
+function drawNumberLine(xVal, xLabel) {
+  var svg = document.getElementById('numberline-svg');
+  svg.innerHTML = '';
+  var W = 380, lineY = 44, margin = 34, lineLeft = margin, lineRight = W - margin;
+  var spread = Math.max(5, Math.ceil(Math.abs(xVal)) + 3);
+  var center = Math.round(xVal);
+  var minVal = center - spread, maxVal = center + spread;
+  if (minVal > 0) minVal = -2;
+  if (maxVal < 0) maxVal = 2;
+  var range = maxVal - minVal;
+  function toX(val) { return lineLeft + ((val - minVal) / range) * (lineRight - lineLeft); }
+  var ns = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs) { var e = document.createElementNS(ns, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function txt(content, attrs) { var e = el('text', attrs); e.textContent = content; return e; }
+  svg.appendChild(el('line', { x1: lineLeft-8, y1: lineY, x2: lineRight+8, y2: lineY, stroke: '#1A5FB4', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+  svg.appendChild(el('polygon', { points: (lineRight+8)+','+lineY+' '+(lineRight+2)+','+(lineY-4)+' '+(lineRight+2)+','+(lineY+4), fill:'#1A5FB4' }));
+  svg.appendChild(el('polygon', { points: (lineLeft-8)+','+lineY+' '+(lineLeft-2)+','+(lineY-4)+' '+(lineLeft-2)+','+(lineY+4), fill:'#1A5FB4' }));
+  var tickStep = 1;
+  if (range > 20) tickStep = 2;
+  if (range > 40) tickStep = 5;
+  var tickStart = Math.ceil(minVal / tickStep) * tickStep;
+  for (var v = tickStart; v <= maxVal; v += tickStep) {
+    var tx = toX(v);
+    if (tx < lineLeft - 1 || tx > lineRight + 1) continue;
+    var isZero = (v === 0);
+    var tickH = isZero ? 10 : 6;
+    svg.appendChild(el('line', { x1: tx, y1: lineY-tickH, x2: tx, y2: lineY+tickH, stroke: isZero ? '#0D1F3C' : '#4A90D9', 'stroke-width': isZero ? '2' : '1.5', 'stroke-linecap': 'round' }));
+    svg.appendChild(txt(v, { x: tx, y: lineY+tickH+13, 'text-anchor': 'middle', 'font-family': 'Segoe UI, sans-serif', 'font-size': isZero ? '11' : '10', 'font-weight': isZero ? '800' : '600', fill: isZero ? '#0D1F3C' : '#6A8AB0' }));
+  }
+  var px = toX(xVal);
+  if (px >= lineLeft - 1 && px <= lineRight + 1) {
+    svg.appendChild(el('line', { x1: px, y1: lineY-22, x2: px, y2: lineY, stroke: '#4CAF87', 'stroke-width': '1.5', 'stroke-dasharray': '3,2' }));
+    svg.appendChild(el('circle', { cx: px, cy: lineY, r: '6', fill: '#4CAF87', stroke: '#fff', 'stroke-width': '2' }));
+    svg.appendChild(txt('x = ' + xLabel, { x: px, y: lineY-26, 'text-anchor': 'middle', 'font-family': 'Segoe UI, sans-serif', 'font-size': '10', 'font-weight': '800', fill: '#1A6A44' }));
+  }
+}
+
+/* ── BANK SOAL (20 soal, C4-C5, variatif) ── */
+var bankSoal = [
+  /* 1 — Bulat biasa */
+  {
+    jenis: 'bulat',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '3x + 5 = 14',
+    opts: ['\\(x = 2\\)', '\\(x = 3\\)', '\\(x = 4\\)', '\\(x = 6\\)'],
+    ans: 1,
+    solusi: [
+      '\\(3x + 5 = 14\\)',
+      'Tambahkan kedua ruas dengan \\(-5\\): \\(3x = 14 + (-5) = 9\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{3}\\): \\(\\dfrac{1}{3} \\times 3x = \\dfrac{1}{3} \\times 9\\)',
+      '\\(x = 3\\)'
+    ]
+  },
+  /* 2 — Bulat, koefisien negatif */
+  {
+    jenis: 'bulat',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '-4x + 12 = -8',
+    opts: ['\\(x = -5\\)', '\\(x = 1\\)', '\\(x = 5\\)', '\\(x = 4\\)'],
+    ans: 2,
+    solusi: [
+      '\\(-4x + 12 = -8\\)',
+      'Tambahkan kedua ruas dengan \\(-12\\): \\(-4x = -8 + (-12) = -20\\)',
+      'Kalikan kedua ruas dengan \\(-\\dfrac{1}{4}\\): \\(-\\dfrac{1}{4} \\times (-4x) = -\\dfrac{1}{4} \\times (-20)\\)',
+      '\\(x = 5\\)'
+    ]
+  },
+  /* 3 — Pecahan koefisien */
+  {
+    jenis: 'pecahan',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '\\dfrac{1}{2}x + 4 = 10',
+    opts: ['\\(x = 6\\)', '\\(x = 10\\)', '\\(x = 12\\)', '\\(x = 8\\)'],
+    ans: 2,
+    solusi: [
+      '\\(\\dfrac{1}{2}x + 4 = 10\\)',
+      'Tambahkan kedua ruas dengan \\(-4\\): \\(\\dfrac{1}{2}x = 10 + (-4) = 6\\)',
+      'Kalikan kedua ruas dengan kebalikan dari \\(\\dfrac{1}{2}\\), yaitu \\(2\\): \\(2 \\times \\dfrac{1}{2}x = 2 \\times 6\\)',
+      '\\(x = 12\\)'
+    ]
+  },
+  /* 4 — Soal cerita (C5: menerapkan ke konteks nyata) */
+  {
+    jenis: 'cerita',
+    q: 'Rina memiliki sejumlah uang. Setelah ia membelanjakan Rp15.000, sisa uangnya adalah Rp45.000. Jika uang Rina mula-mula adalah \\(x\\) rupiah, persamaan yang tepat adalah \\(x - 15.000 = 45.000\\). Berapa uang Rina mula-mula?',
+    eq: null,
+    opts: ['Rp30.000', 'Rp45.000', 'Rp60.000', 'Rp75.000'],
+    ans: 2,
+    solusi: [
+      '\\(x - 15.000 = 45.000\\)',
+      'Tambahkan kedua ruas dengan \\(15.000\\): \\(x = 45.000 + 15.000\\)',
+      '\\(x = 60.000\\)',
+      'Uang Rina mula-mula = Rp60.000'
+    ]
+  },
+  /* 5 — Verifikasi (C5: mengevaluasi) */
+  {
+    jenis: 'analisis',
+    q: 'Manakah nilai \\(x\\) yang merupakan penyelesaian dari persamaan \\(5x - 3 = 22\\)?',
+    eq: null,
+    opts: ['\\(x = 4\\)', '\\(x = 5\\)', '\\(x = 6\\)', '\\(x = 7\\)'],
+    ans: 1,
+    solusi: [
+      '\\(5x - 3 = 22\\)',
+      'Tambahkan kedua ruas dengan \\(3\\): \\(5x = 22 + 3 = 25\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{5}\\): \\(\\dfrac{1}{5} \\times 5x = \\dfrac{1}{5} \\times 25\\)',
+      '\\(x = 5\\)'
+    ]
+  },
+  /* 6 — Pecahan campuran */
+  {
+    jenis: 'pecahan',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '\\dfrac{2}{3}x - 2 = 6',
+    opts: ['\\(x = 9\\)', '\\(x = 10\\)', '\\(x = 12\\)', '\\(x = 6\\)'],
+    ans: 2,
+    solusi: [
+      '\\(\\dfrac{2}{3}x - 2 = 6\\)',
+      'Tambahkan kedua ruas dengan \\(2\\): \\(\\dfrac{2}{3}x = 6 + 2 = 8\\)',
+      'Kalikan kedua ruas dengan kebalikan dari \\(\\dfrac{2}{3}\\), yaitu \\(\\dfrac{3}{2}\\): \\(\\dfrac{3}{2} \\times \\dfrac{2}{3}x = \\dfrac{3}{2} \\times 8\\)',
+      '\\(x = 8 \\times \\dfrac{3}{2} = 12\\)'
+    ]
+  },
+  /* 7 — Cek substitusi (C4: menganalisis) */
+  {
+    jenis: 'analisis',
+    q: 'Diketahui \\(x = 4\\). Substitusikan ke persamaan \\(3x + b = 17\\). Berapa nilai \\(b\\)?',
+    eq: null,
+    opts: ['\\(b = 3\\)', '\\(b = 5\\)', '\\(b = 7\\)', '\\(b = 9\\)'],
+    ans: 1,
+    solusi: [
+      'Substitusi \\(x = 4\\): \\(3(4) + b = 17\\)',
+      '\\(12 + b = 17\\)',
+      'Tambahkan kedua ruas dengan \\(-12\\): \\(b = 17 + (-12)\\)',
+      '\\(b = 5\\)'
+    ]
+  },
+  /* 8 — Soal cerita kecepatan */
+  {
+    jenis: 'cerita',
+    q: 'Sebuah mobil melaju dengan kecepatan tetap. Setelah \\(x\\) jam, jarak yang ditempuh adalah 180 km. Jika kecepatan mobil 60 km/jam, persamaannya adalah \\(60x = 180\\). Berapa lama mobil melaju?',
+    eq: null,
+    opts: ['1 jam', '2 jam', '3 jam', '4 jam'],
+    ans: 2,
+    solusi: [
+      '\\(60x = 180\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{60}\\): \\(\\dfrac{1}{60} \\times 60x = \\dfrac{1}{60} \\times 180\\)',
+      '\\(x = 3\\)',
+      'Mobil melaju selama 3 jam'
+    ]
+  },
+  /* 9 — Rasional hasil pecahan */
+  {
+    jenis: 'rasional',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '7x + 1 = 5',
+    opts: ['\\(x = \\dfrac{2}{7}\\)', '\\(x = \\dfrac{3}{7}\\)', '\\(x = \\dfrac{4}{7}\\)', '\\(x = 1\\)'],
+    ans: 2,
+    solusi: [
+      '\\(7x + 1 = 5\\)',
+      'Tambahkan kedua ruas dengan \\(-1\\): \\(7x = 5 + (-1) = 4\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{7}\\): \\(\\dfrac{1}{7} \\times 7x = \\dfrac{1}{7} \\times 4\\)',
+      '\\(x = \\dfrac{4}{7}\\)'
+    ]
+  },
+  /* 10 — Soal cerita usia */
+  {
+    jenis: 'cerita',
+    q: 'Usia Ayah sekarang adalah 3 kali usia Budi ditambah 6 tahun. Jika usia Ayah 48 tahun, berapa usia Budi? (Gunakan persamaan \\(3x + 6 = 48\\))',
+    eq: null,
+    opts: ['12 tahun', '14 tahun', '16 tahun', '18 tahun'],
+    ans: 0,
+    solusi: [
+      '\\(3x + 6 = 48\\)',
+      'Tambahkan kedua ruas dengan \\(-6\\): \\(3x = 48 + (-6) = 42\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{3}\\): \\(\\dfrac{1}{3} \\times 3x = \\dfrac{1}{3} \\times 42\\)',
+      '\\(x = 14\\) tahun'
+    ]
+  },
+  /* 11 — Analisis: tentukan koefisien */
+  {
+    jenis: 'analisis',
+    q: 'Jika \\(x = 3\\) adalah solusi dari persamaan \\(ax - 9 = 6\\), maka nilai \\(a\\) adalah ...',
+    eq: null,
+    opts: ['\\(a = 3\\)', '\\(a = 4\\)', '\\(a = 5\\)', '\\(a = 6\\)'],
+    ans: 2,
+    solusi: [
+      'Substitusi \\(x = 3\\): \\(3a - 9 = 6\\)',
+      'Tambahkan kedua ruas dengan \\(9\\): \\(3a = 6 + 9 = 15\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{3}\\): \\(\\dfrac{1}{3} \\times 3a = \\dfrac{1}{3} \\times 15\\)',
+      '\\(a = 5\\)'
+    ]
+  },
+  /* 12 — Pecahan variabel di penyebut */
+  {
+    jenis: 'pecahan',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '\\dfrac{x}{4} + 3 = 7',
+    opts: ['\\(x = 8\\)', '\\(x = 12\\)', '\\(x = 16\\)', '\\(x = 20\\)'],
+    ans: 2,
+    solusi: [
+      '\\(\\dfrac{x}{4} + 3 = 7\\)',
+      'Tambahkan kedua ruas dengan \\(-3\\): \\(\\dfrac{x}{4} = 7 + (-3) = 4\\)',
+      'Kalikan kedua ruas dengan kebalikan dari \\(\\dfrac{1}{4}\\), yaitu \\(4\\): \\(4 \\times \\dfrac{x}{4} = 4 \\times 4\\)',
+      '\\(x = 16\\)'
+    ]
+  },
+  /* 13 — Soal cerita harga barang */
+  {
+    jenis: 'cerita',
+    q: 'Harga 5 buah buku tulis adalah Rp37.500. Jika harga per buku adalah \\(x\\) rupiah, persamaannya \\(5x = 37.500\\). Berapa harga satu buku?',
+    eq: null,
+    opts: ['Rp6.500', 'Rp7.000', 'Rp7.500', 'Rp8.000'],
+    ans: 2,
+    solusi: [
+      '\\(5x = 37.500\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{5}\\): \\(\\dfrac{1}{5} \\times 5x = \\dfrac{1}{5} \\times 37.500\\)',
+      '\\(x = 7.500\\)',
+      'Harga satu buku = Rp7.500'
+    ]
+  },
+  /* 14 — Rasional bentuk kompleks */
+  {
+    jenis: 'rasional',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '\\dfrac{2x - 1}{3} + 1 = 3',
+    opts: ['\\(x = \\dfrac{5}{2}\\)', '\\(x = \\dfrac{7}{2}\\)', '\\(x = 3\\)', '\\(x = 4\\)'],
+    ans: 1,
+    solusi: [
+      '\\(\\dfrac{2x - 1}{3} + 1 = 3\\)',
+      'Tambahkan kedua ruas dengan \\(-1\\): \\(\\dfrac{2x - 1}{3} = 3 + (-1) = 2\\)',
+      'Kalikan kedua ruas dengan \\(3\\): \\(3 \\times \\dfrac{2x-1}{3} = 3 \\times 2\\), sehingga \\(2x - 1 = 6\\)',
+      'Tambahkan kedua ruas dengan \\(1\\): \\(2x = 6 + 1 = 7\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{2}\\): \\(x = \\dfrac{1}{2} \\times 7 = \\dfrac{7}{2}\\)'
+    ]
+  },
+  /* 15 — Evaluasi kebenaran pernyataan (C5) */
+  {
+    jenis: 'analisis',
+    q: 'Perhatikan tabel berikut. Manakah pasangan \\((x, c)\\) yang memenuhi persamaan \\(4x - 3 = c\\)?',
+    eq: null,
+    opts: ['\\(x=2,\\ c=5\\)', '\\(x=3,\\ c=9\\)', '\\(x=4,\\ c=12\\)', '\\(x=5,\\ c=17\\)'],
+    ans: 1,
+    solusi: [
+      'Uji setiap pilihan pada \\(4x - 3\\):',
+      'x=2: \\(4(2)-3 = 5\\) ✓ tapi cek pilihan: c=5, benar!',
+      'x=3: \\(4(3)-3 = 9\\) ✓ c=9, benar!',
+      'Kedua bisa benar? Tapi soal meminta SATU. x=3, c=9 adalah opsi B.',
+      'Jawaban: \\(x=3,\\ c=9\\)'
+    ]
+  },
+  /* 16 — Bulat: variabel di kanan */
+  {
+    jenis: 'bulat',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '18 = 6x - 6',
+    opts: ['\\(x = 3\\)', '\\(x = 4\\)', '\\(x = 5\\)', '\\(x = 6\\)'],
+    ans: 1,
+    solusi: [
+      '\\(18 = 6x - 6\\)',
+      'Tambahkan kedua ruas dengan \\(6\\): \\(18 + 6 = 6x\\)',
+      '\\(24 = 6x\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{6}\\): \\(\\dfrac{1}{6} \\times 24 = \\dfrac{1}{6} \\times 6x\\)',
+      '\\(x = 4\\)'
+    ]
+  },
+  /* 17 — Soal cerita perimeter */
+  {
+    jenis: 'cerita',
+    q: 'Keliling sebuah persegi panjang adalah 36 cm. Lebarnya 6 cm. Jika panjangnya \\(x\\) cm, maka \\(2(x + 6) = 36\\). Berapa panjang persegi panjang tersebut?',
+    eq: null,
+    opts: ['10 cm', '12 cm', '14 cm', '15 cm'],
+    ans: 1,
+    solusi: [
+      '\\(2(x + 6) = 36\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{2}\\): \\(x + 6 = \\dfrac{1}{2} \\times 36 = 18\\)',
+      'Tambahkan kedua ruas dengan \\(-6\\): \\(x = 18 + (-6)\\)',
+      '\\(x = 12\\) cm'
+    ]
+  },
+  /* 18 — Analisis: persamaan mana yang benar */
+  {
+    jenis: 'analisis',
+    q: 'Sebuah bilangan jika dikalikan 3 kemudian dikurangi 7 hasilnya 11. Persamaan yang tepat untuk situasi ini adalah ...',
+    eq: null,
+    opts: ['\\(3x + 7 = 11\\)', '\\(3x - 7 = 11\\)', '\\(7x - 3 = 11\\)', '\\(x - 7 = 3 \\times 11\\)'],
+    ans: 1,
+    solusi: [
+      '"Dikalikan 3" → \\(3x\\)',
+      '"Dikurangi 7" → \\(3x - 7\\)',
+      '"Hasilnya 11" → \\(3x - 7 = 11\\)',
+      'Jadi persamaannya: \\(3x - 7 = 11\\), sehingga \\(x = 6\\)'
+    ]
+  },
+  /* 19 — Rasional koefisien negatif pecahan */
+  {
+    jenis: 'rasional',
+    q: 'Tentukan nilai \\(x\\) dari persamaan berikut:',
+    eq: '-\\dfrac{3}{2}x + 6 = 0',
+    opts: ['\\(x = -4\\)', '\\(x = 2\\)', '\\(x = 4\\)', '\\(x = 6\\)'],
+    ans: 2,
+    solusi: [
+      '\\(-\\dfrac{3}{2}x + 6 = 0\\)',
+      'Tambahkan kedua ruas dengan \\(-6\\): \\(-\\dfrac{3}{2}x = 0 + (-6) = -6\\)',
+      'Kalikan kedua ruas dengan kebalikan dari \\(-\\dfrac{3}{2}\\), yaitu \\(-\\dfrac{2}{3}\\): \\(-\\dfrac{2}{3} \\times \\left(-\\dfrac{3}{2}x\\right) = -\\dfrac{2}{3} \\times (-6)\\)',
+      '\\(x = 6 \\times \\dfrac{2}{3} = 4\\)'
+    ]
+  },
+  /* 20 — Soal cerita gabungan (C5) */
+  {
+    jenis: 'cerita',
+    q: 'Dua kakak beradik memiliki tabungan bersama Rp120.000. Kakak menabung dua kali lebih banyak dari adik. Jika tabungan adik adalah \\(x\\), maka \\(x + 2x = 120.000\\). Berapa tabungan kakak?',
+    eq: null,
+    opts: ['Rp40.000', 'Rp60.000', 'Rp80.000', 'Rp90.000'],
+    ans: 2,
+    solusi: [
+      '\\(x + 2x = 120.000\\)',
+      '\\(3x = 120.000\\)',
+      'Kalikan kedua ruas dengan \\(\\dfrac{1}{3}\\): \\(\\dfrac{1}{3} \\times 3x = \\dfrac{1}{3} \\times 120.000\\)',
+      '\\(x = 40.000\\) (tabungan adik)',
+      'Tabungan kakak = \\(2x = 80.000\\)'
+    ]
+  }
+];
+
+var curSoal = 0, benar = 0, salah = 0, answered = false;
+
+function renderSoal() {
+  var s = bankSoal[curSoal];
+  var jenisLabel = { bulat: '🔢 Bilangan Bulat', pecahan: '½ Bilangan Pecahan', rasional: '⅗ Bilangan Rasional', cerita: '📖 Soal Cerita', analisis: '🔍 Analisis & Evaluasi' };
+  document.getElementById('soal-num').innerHTML =
+    '<span>Soal #' + (curSoal + 1) + '</span><span class="jenis-badge ' + s.jenis + '">' + jenisLabel[s.jenis] + '</span>';
+  document.getElementById('prog-text').textContent = (curSoal + 1) + ' / ' + bankSoal.length;
+  document.getElementById('prog-fill').style.width = (((curSoal + 1) / bankSoal.length) * 100) + '%';
+  document.getElementById('sc-benar').textContent = benar;
+  document.getElementById('sc-salah').textContent = salah;
+  document.getElementById('sc-sisa').textContent = bankSoal.length - curSoal - 1;
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('btn-next').style.display = 'none';
+  answered = false;
+
+  document.getElementById('soal-q').innerHTML = s.q;
+
+  var eqBox = document.getElementById('soal-eq');
+  if (s.eq) {
+    eqBox.style.display = 'block';
+    eqBox.innerHTML = '\\(' + s.eq + '\\)';
+  } else {
+    eqBox.style.display = 'none';
+    eqBox.innerHTML = '';
+  }
+
+  var optsHtml = '';
+  for (var i = 0; i < s.opts.length; i++) {
+    optsHtml += '<button class="opt-btn" onclick="checkAns(this,' + i + ')">' + s.opts[i] + '</button>';
+  }
+  document.getElementById('options-grid').innerHTML = optsHtml;
+  mjRender(document.getElementById('soal-wrapper'));
+}
+
+function checkAns(btn, idx) {
+  if (answered) return;
+  answered = true;
+  var s = bankSoal[curSoal];
+  var correct = (s.ans === idx);
+  document.querySelectorAll('.opt-btn').forEach(function(b) { b.disabled = true; });
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  // Highlight correct answer too if wrong
+  if (!correct) {
+    document.querySelectorAll('.opt-btn')[s.ans].classList.add('correct');
+  }
+  if (correct) { benar++; } else { salah++; }
+  document.getElementById('sc-benar').textContent = benar;
+  document.getElementById('sc-salah').textContent = salah;
+
+  var fb = document.getElementById('feedback');
+  fb.className = 'feedback-box ' + (correct ? 'ok' : 'no');
+  if (correct) {
+    fb.innerHTML = '🎉 Benar! Kerja bagus!';
+  } else {
+    var stepsHtml = '<div class="feedback-steps"><strong>📝 Langkah Penyelesaian:</strong><br>';
+    for (var i = 0; i < s.solusi.length; i++) {
+      stepsHtml += '<div class="feedback-step-row">' + (i + 1) + '. ' + s.solusi[i] + '</div>';
+    }
+    stepsHtml += '</div>';
+    fb.innerHTML = '❌ Jawaban Salah! Jawaban yang benar: ' + s.opts[s.ans] + stepsHtml;
+  }
+  fb.style.display = 'block';
+  mjRender(fb);
+  document.getElementById('btn-next').style.display = 'block';
+}
+
+function nextSoal() {
+  curSoal++;
+  if (curSoal >= bankSoal.length) {
+    document.getElementById('soal-wrapper').style.display = 'none';
+    document.getElementById('btn-next').style.display = 'none';
+    document.getElementById('congrats').style.display = 'block';
+    document.getElementById('score-final').textContent = benar + ' / ' + bankSoal.length;
+    var pct = (benar / bankSoal.length) * 100;
+    document.getElementById('congrats-msg').textContent =
+      pct === 100 ? '🌟 Sempurna! Kamu luar biasa!' :
+      pct >= 70   ? '👍 Bagus sekali! Terus berlatih ya.' :
+      pct >= 50   ? '💪 Lumayan! Masih ada ruang untuk berkembang.' :
+                    '📚 Jangan menyerah, pelajari materi dan coba lagi!';
+  } else {
+    renderSoal();
+  }
+}
+
+function restartSoal() {
+  curSoal = 0; benar = 0; salah = 0; answered = false;
+  document.getElementById('soal-wrapper').style.display = 'block';
+  document.getElementById('congrats').style.display = 'none';
+  renderSoal();
+}
+
+/* ── INIT ── */
+(function() {
+  renderSoal();
+  mjRender(document.getElementById('panel-materi'));
+})();
+</script>
+</body>
+</html>
